@@ -4,10 +4,58 @@
 #include <sys/wait.h>
 #include "a2_helper.h"
 #include <stdlib.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <semaphore.h>
 
+typedef struct {
+int tid;
+ } TH_STRUCT;
+sem_t sem1, sem2;
+
+void *threadC(void *unused){
+
+	TH_STRUCT *param = (TH_STRUCT*)unused;
+		if(param->tid==1){
+		info(BEGIN, 9, 1);
+			sem_post(&sem1);
+			sem_wait(&sem2);
+  		info(END, 9, 1);
+		}
+		else if(param->tid==2){
+		sem_wait(&sem1);
+		info(BEGIN, 9, 2);
+  		info(END, 9, 2);
+  		sem_post(&sem2);
+		}
+		else{
+		info(BEGIN, 9, param->tid);
+  		info(END, 9, param->tid);
+		}
+ 	
+ 	return NULL;
+}
+
+void functie(){
+	sem_init(&sem1, 0, 0);
+	sem_init(&sem2, 0, 0);
+
+	TH_STRUCT params[6];
+	pthread_t tid[6];
+	for(int i=1;i<=5; i++){
+		params[i].tid=i;
+ 		pthread_create(&tid[i], NULL, threadC ,&params[i]);
+ 		
+	}
+	for(int i=1; i<=5; i++) {
+	 pthread_join(tid[i], NULL);
+        }
+}
 
 
 int main(){
+
     init();
 	
     info(BEGIN, 1, 0);
@@ -67,12 +115,14 @@ int main(){
         info(END, 8, 0);
         exit(0);
      }
-     p9=fork();
-     if(p9==0){
-     	info(BEGIN, 9, 0);
-        info(END, 9, 0);
-        exit(0);
-     }
+	     p9=fork();
+	     if(p9==0)
+	     	{
+	     	info(BEGIN, 9, 0);
+	     	functie();
+		info(END, 9, 0);
+		exit(0);
+	     }
      
     waitpid(p2,0,0);
     waitpid(p3,0,0);
