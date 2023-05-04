@@ -12,7 +12,8 @@
 typedef struct {
 int tid;
  } TH_STRUCT;
-sem_t sem1, sem2;
+sem_t sem1, sem2, sem3;
+int nrThreads=0;
 
 void *threadC(void *unused){
 
@@ -53,7 +54,35 @@ void functie(){
         }
 }
 
+void *threadC2(void *unused){
 
+	TH_STRUCT *param = (TH_STRUCT*)unused;
+	
+		sem_wait(&sem3);
+		
+			info(BEGIN, 5, param->tid);
+  			info(END, 5, param->tid);
+		
+		sem_post(&sem3);
+ 	
+ 	return NULL;
+}
+
+void functie2(){
+	sem_init(&sem3, 0, 4);
+
+
+	TH_STRUCT params[43];
+	pthread_t tid[43];
+	for(int i=1;i<=42; i++){
+		params[i].tid=i;
+ 		pthread_create(&tid[i], NULL, threadC2 ,&params[i]);
+ 		
+	}
+	for(int i=1; i<=42; i++) {
+	 pthread_join(tid[i], NULL);
+        }
+}
 int main(){
 
     init();
@@ -86,6 +115,7 @@ int main(){
   	 	p5=fork();
   	 	if(p5==0){
   	 		info(BEGIN, 5, 0);
+  	 		functie2();
   		  	info(END, 5, 0);
   		  	exit(0);
   	 	}
