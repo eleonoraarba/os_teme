@@ -12,12 +12,12 @@
 typedef struct {
 int tid;
  } TH_STRUCT;
-sem_t sem1, sem2, sem3;
+sem_t sem1, sem2, sem3,sem4, *sem5=NULL, *sem6=NULL;
 int nrThreads=0;
 
-void *threadC(void *unused){
+void *threadC(void *arg){
 
-	TH_STRUCT *param = (TH_STRUCT*)unused;
+	TH_STRUCT *param = (TH_STRUCT*)arg;
 		if(param->tid==1){
 		info(BEGIN, 9, 1);
 			sem_post(&sem1);
@@ -29,6 +29,12 @@ void *threadC(void *unused){
 		info(BEGIN, 9, 2);
   		info(END, 9, 2);
   		sem_post(&sem2);
+		}
+		else if(param->tid==5){
+			sem_wait(sem5);
+				info(BEGIN, 9, 5);
+  				info(END, 9, 5);
+  			sem_post(sem6);
 		}
 		else{
 		info(BEGIN, 9, param->tid);
@@ -54,9 +60,9 @@ void functie(){
         }
 }
 
-void *threadC2(void *unused){
+void *threadC2(void *arg){
 
-	TH_STRUCT *param = (TH_STRUCT*)unused;
+	TH_STRUCT *param = (TH_STRUCT*)arg;
 	
 		sem_wait(&sem3);
 		
@@ -83,8 +89,58 @@ void functie2(){
 	 pthread_join(tid[i], NULL);
         }
 }
-int main(){
 
+void *threadC3(void *arg){
+
+	TH_STRUCT *param = (TH_STRUCT*)arg;
+	
+		sem_wait(&sem4);
+		
+		if(param->tid== 4){
+			info(BEGIN, 8, param->tid);
+  			info(END, 8, param->tid);
+  			sem_post(sem5);
+		}
+		else if(param->tid== 4){
+			sem_wait(sem6);
+			info(BEGIN, 8, param->tid);
+  			info(END, 8, param->tid);
+  			
+		}
+		else if(param->tid== 3){
+			sem_wait(sem6);
+			info(BEGIN, 8, 3);
+  			info(END, 8, 3);
+		}
+		else{
+			info(BEGIN, 8, param->tid);
+  			info(END, 8, param->tid);
+		}
+			
+		
+		sem_post(&sem4);
+ 	
+ 	return NULL;
+}
+
+void functie3(){
+	sem_init(&sem4, 0, 4);
+
+
+	TH_STRUCT params[6];
+	pthread_t tid[6];
+	for(int i=1;i<=4; i++){
+		params[i].tid=i;
+ 		pthread_create(&tid[i], NULL, threadC3 ,&params[i]);
+ 		
+	}
+	for(int i=1; i<=4; i++) {
+	 pthread_join(tid[i], NULL);
+        }
+}
+int main(){
+    sem5 = sem_open("/sem5", O_CREAT, 0644, 0);
+    sem6 = sem_open("/sem6", O_CREAT, 0644, 0);
     init();
 	
     info(BEGIN, 1, 0);
@@ -142,6 +198,7 @@ int main(){
      p8=fork();
      if(p8==0){
      	info(BEGIN, 8, 0);
+     	functie3();
         info(END, 8, 0);
         exit(0);
      }
